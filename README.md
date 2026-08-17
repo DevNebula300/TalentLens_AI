@@ -19,7 +19,7 @@ The current version focuses on the resume processing pipeline:
 
 AI-powered skill extraction, semantic matching, and compatibility scoring are planned for the next stages.
 
----
+
 
 ## Planned Features
 
@@ -32,5 +32,5 @@ AI-powered skill extraction, semantic matching, and compatibility scoring are pl
 -  Matching and missing skill insights
 -  Analysis history
 
----
+
 
