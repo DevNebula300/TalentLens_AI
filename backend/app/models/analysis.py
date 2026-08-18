@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.connection import Base
@@ -26,6 +26,11 @@ class Analysis(Base):
 
     overall_score: Mapped[float | None] = mapped_column(
         Float,
+        nullable=True,
+    )
+    
+    match_result: Mapped[dict | None] = mapped_column(
+        JSON,
         nullable=True,
     )
 

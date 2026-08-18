@@ -140,7 +140,20 @@ def is_heading(line: str) -> bool:
     return False
 
 def detect_sections(text: str) -> dict[str, str]:
-    """Parse resume text into a dictionary of sections."""
+    """
+    Parses unstructured resume text into a dictionary of categorized sections 
+    (e.g., Experience, Education, Skills).
+    
+    It uses heuristic rules to identify likely section headings by checking 
+    capitalization, length, common keywords, and formatting.
+    
+    Args:
+        text (str): The raw text extracted from a resume.
+        
+    Returns:
+        dict[str, str]: A dictionary where keys are normalized section names 
+                        and values are the concatenated text for that section.
+    """
     sections: dict[str, list[str]] = {"Summary": []}
     current_section = "Summary"
     
