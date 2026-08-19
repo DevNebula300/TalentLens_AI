@@ -2,6 +2,7 @@ import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from app.services.skill_similarity import classify_skill_pair, calculate_similarity
+from app.services.recommendations import generate_recommendations
 
 class ResumeMatchingEngine:
     
@@ -312,9 +313,10 @@ class ResumeMatchingEngine:
             }
         }
 
-    def extract_experience_years(self, text: str) -> float:
-        text = text.lower()
+    def extract_experience_years(self, text: str) -> tuple[float, str]:
+        text_lower = text.lower()
         total_years = 0.0
+        evidence_snippet = ""
         
         patterns = [
             r'(\d+)\s*\+\s*years?',
@@ -325,26 +327,95 @@ class ResumeMatchingEngine:
         ]
         
         for pattern in patterns:
-            matches = re.findall(pattern, text)
-            if matches:
-                for match in matches:
-                    if isinstance(match, tuple):
-                        start, end = map(int, match)
-                        total_years = max(total_years, (start + end) / 2)
-                    else:
-                        total_years = max(total_years, float(match))
-                break
-        
+            for match in re.finditer(pattern, text_lower):
+                val_match = match.groups()
+                current_years = 0.0
+                if len(val_match) == 2 and val_match[0] and val_match[1]:
+                    current_years = (int(val_match[0]) + int(val_match[1])) / 2
+                elif val_match[0]:
+                    current_years = float(val_match[0])
+                    
+                if current_years > total_years:
+                    total_years = current_years
+                    # Extract roughly 30 characters of context around the match
+                    start = max(0, match.start() - 30)
+                    end = min(len(text), match.end() + 30)
+                    evidence_snippet = "..." + text[start:end].replace('\n', ' ').strip() + "..."
+                    
         if total_years == 0:
-            since_matches = re.findall(r'since\s+(\d{4})', text, re.IGNORECASE)
-            if since_matches:
+            # Check for months if no years were found
+            for match in re.finditer(r'(\d+)\s*months?', text_lower):
+                val = float(match.group(1))
+                current_years = val / 12.0
+                if current_years > total_years:
+                    total_years = current_years
+                    start = max(0, match.start() - 30)
+                    end = min(len(text), match.end() + 30)
+                    evidence_snippet = "..." + text[start:end].replace('\n', ' ').strip() + "..."
+                    
+        if total_years == 0:
+            for match in re.finditer(r'since\s+(\d{4})', text_lower, re.IGNORECASE):
+                year_str = match.group(1)
+                year = int(year_str)
                 current_year = datetime.now().year
-                for year_str in since_matches:
-                    year = int(year_str)
-                    if 1900 < year <= current_year:
-                        total_years = max(total_years, current_year - year)
+                if 1900 < year <= current_year:
+                    total_years = max(total_years, float(current_year - year))
+                    start = max(0, match.start() - 30)
+                    end = min(len(text), match.end() + 30)
+                    evidence_snippet = "..." + text[start:end].replace('\n', ' ').strip() + "..."
+                    
+        if total_years == 0:
+            months = [
+                'january', 'february', 'march', 'april', 'may', 'june', 
+                'july', 'august', 'september', 'october', 'november', 'december',
+                'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+            ]
+            months_pattern = '|'.join(months)
+            
+            # Matches: "June 2025 - August 2025" or "Jan 2020 to Present"
+            date_range_pattern = rf'\b({months_pattern})\s+(\d{{4}})\s*(?:-|to|–|—)\s*(?:({months_pattern})\s+(\d{{4}})|present|current|now)\b'
+            
+            total_months = 0
+            first_match = None
+            
+            for match in re.finditer(date_range_pattern, text_lower, re.IGNORECASE):
+                if not first_match:
+                    first_match = match
+                    
+                start_month_str, start_year_str, end_month_str, end_year_str = match.groups()
+                start_year = int(start_year_str)
+                
+                start_month_idx = 1
+                for i, m in enumerate(months):
+                    if start_month_str.lower() == m:
+                        start_month_idx = (i % 12) + 1
+                        break
+                        
+                if end_month_str and end_year_str:
+                    end_year = int(end_year_str)
+                    end_month_idx = 1
+                    for i, m in enumerate(months):
+                        if end_month_str.lower() == m:
+                            end_month_idx = (i % 12) + 1
+                            break
+                else:
+                    now = datetime.now()
+                    end_year = now.year
+                    end_month_idx = now.month
+                    
+                if end_year >= start_year:
+                    months_diff = (end_year - start_year) * 12 + (end_month_idx - start_month_idx)
+                    # Add 1 to make it inclusive (e.g. Jan-Jan is 1 month, not 0)
+                    if months_diff >= 0:
+                        total_months += (months_diff + 1)
+                        
+            if total_months > 0:
+                total_years = total_months / 12.0
+                start = max(0, first_match.start() - 30)
+                end = min(len(text), first_match.end() + 30)
+                evidence_snippet = "..." + text[start:end].replace('\n', ' ').strip() + "..."
         
-        return total_years
+        return total_years, evidence_snippet
 
     def get_experience_level(self, years: float) -> str:
         for level, (min_years, max_years) in self.config["experience_levels"].items():
@@ -357,7 +428,15 @@ class ResumeMatchingEngine:
         required_years: float,
         candidate_text: str
     ) -> Dict[str, Any]:
-        candidate_years = self.extract_experience_years(candidate_text)
+        candidate_years, evidence_snippet = self.extract_experience_years(candidate_text)
+        
+        project_keywords = ["github", "open source", "portfolio", "hackathon", "personal project"]
+        has_strong_projects = any(kw in candidate_text.lower() for kw in project_keywords)
+        
+        if not evidence_snippet and has_strong_projects:
+            evidence_snippet = "Experience inferred from strong project/portfolio evidence."
+        elif not evidence_snippet:
+            evidence_snippet = "No explicit years of experience found in resume."
         
         if required_years == 0:
             return {
@@ -365,16 +444,21 @@ class ResumeMatchingEngine:
                 "candidate_years": candidate_years,
                 "required_years": required_years,
                 "difference": 0,
-                "level_match": "not_applicable"
+                "level_match": "not_applicable",
+                "has_projects": has_strong_projects,
+                "evidence": evidence_snippet
             }
         
         if candidate_years == 0:
+            base_score = 0.3 if has_strong_projects else 0.0
             return {
-                "score": 0.0,
+                "score": base_score,
                 "candidate_years": 0,
                 "required_years": required_years,
                 "difference": required_years,
-                "level_match": "unknown"
+                "level_match": "unknown",
+                "has_projects": has_strong_projects,
+                "evidence": evidence_snippet
             }
         
         diff = candidate_years - required_years
@@ -394,6 +478,9 @@ class ResumeMatchingEngine:
         
         if required_level == candidate_level:
             score = min(score + 0.1, 1.0)
+            
+        if diff < 0 and has_strong_projects:
+            score = min(score + 0.2, 1.0)
         
         return {
             "score": round(min(score, 1.0), 4),
@@ -401,8 +488,10 @@ class ResumeMatchingEngine:
             "required_years": required_years,
             "difference": diff,
             "level_match": f"{candidate_level} vs {required_level}",
+            "has_projects": has_strong_projects,
+            "evidence": evidence_snippet,
             "details": {
-                "extracted_from": candidate_text[:100] + "..."
+                "extracted_from": evidence_snippet
             }
         }
 
@@ -536,8 +625,39 @@ class ResumeMatchingEngine:
             skill_result, experience_result, keyword_result, candidate_resume_text
         )
         
+        analysis_data = {
+            "missing_skills": skill_result.get("missing", []),
+            "matched_skills": [s.get("matched_with") for s in skill_result.get("matched", []) if s.get("matched_with")],
+            "additional_skills": skill_result.get("additional", []),
+            "skill_score": skill_score,
+            "experience_score": experience_score,
+            "keyword_score": keyword_score,
+            "semantic_score": semantic_score,
+            "overqualification_flag": any("overqualified" in gap.lower() for gap in insights["gaps"]),
+            "skill_importance": job_requirements.get("skill_importance", {}) if job_requirements else {},
+            "skill_frequency": job_requirements.get("skill_frequency", {}) if job_requirements else {},
+            "has_projects": experience_result.get("has_projects", False),
+            "experience_difference": experience_result.get("difference", 0.0)
+        }
+        recommendations = generate_recommendations(analysis_data)
+        
+        matched_skills_list = analysis_data["matched_skills"]
+        compatibility_level = "Excellent" if final_score >= 0.85 else "Strong" if final_score >= 0.7 else "Moderate" if final_score >= 0.5 else "Low"
+        
+        compatibility_analysis = {
+            "overall_compatibility": compatibility_level,
+            "score": round(final_score, 4),
+            "evidence": {
+                "skills_evidence": f"Explicitly matched {len(matched_skills_list)} required skills ({', '.join(matched_skills_list[:5])}{'...' if len(matched_skills_list) > 5 else ''})." if matched_skills_list else "No explicit required skills matched.",
+                "experience_evidence": experience_result.get("evidence", "No evidence found."),
+                "semantic_evidence": "Resume concepts align strongly with the job description." if semantic_score >= 0.6 else "Concepts somewhat differ from job requirements.",
+                "keyword_evidence": f"Found {len(keyword_result.get('found', []))} exact keyword matches." if keyword_result.get('found') else "Low keyword alignment."
+            }
+        }
+        
         return {
             "overall_score": round(final_score, 4),
+            "compatibility_analysis": compatibility_analysis,
             "weight_source": weight_source,
             "weights_used": weights,
             "weight_explanations": weight_explanations,
@@ -559,6 +679,7 @@ class ResumeMatchingEngine:
             "additional_skills": skill_result.get("additional", []),
             "strengths": insights["strengths"],
             "gaps": insights["gaps"],
+            "recommendations": recommendations,
             "details": {
                 "skill_details": skill_result,
                 "semantic_details": semantic_result,
@@ -637,7 +758,12 @@ class ResumeMatchingEngine:
                     strengths.append("Meets experience requirement.")
             else:
                 diff = req_years - cand_years
-                gaps.append(f"Falls short of experience requirement by {diff} years.")
+                has_projects = experience_result.get("has_projects", False)
+                if has_projects:
+                    gaps.append(f"Falls short of formal experience requirement by {diff:.1f} years, but this may be offset by strong project work.")
+                    strengths.append("Demonstrates practical experience through projects/portfolio.")
+                else:
+                    gaps.append(f"Falls short of experience requirement by {diff:.1f} years.")
         
         matched_skills = skill_result.get("matched", [])
         if matched_skills:
