@@ -137,6 +137,9 @@ def normalize_skill(skill: str) -> str:
     return SKILL_ALIASES.get(normalized, normalized)
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=10000)
 def calculate_similarity(skill_a: str, skill_b: str) -> float:
     """
     Calculate similarity between two skills.
@@ -218,19 +221,4 @@ def classify_skill_pair(
         "classification": classification,
     }
 
-
-
-
-    test_pairs = [
-        ("ML", "Machine Learning"),
-        ("Docker", "Kubernetes"),
-        ("Python", "Accounting"),
-    ]
-
-    for skill_a, skill_b in test_pairs:
-        result = classify_skill_pair(
-            skill_a,
-            skill_b,
-        )
-
-        print(result)
+
