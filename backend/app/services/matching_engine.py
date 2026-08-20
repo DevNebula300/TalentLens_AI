@@ -185,6 +185,7 @@ class ResumeMatchingEngine:
     def calculate_skill_match_score(
         self,
         required_skills: List[str],
+        preferred_skills: List[str],
         candidate_skills: List[str]
     ) -> Dict[str, Any]:
         if not required_skills:
@@ -257,13 +258,57 @@ class ResumeMatchingEngine:
             
         matched_candidate_skills = {m["matched_with"] for m in matched if m.get("matched_with")}
         matched_candidate_skills.update({p["matched_with"] for p in partial_matches if p.get("matched_with")})
+        
+        # Calculate preferred skills match
+        preferred_matched = []
+        preferred_missing = []
+        preferred_score_bonus = 0.0
+        
+        for pref_skill in (preferred_skills or []):
+            best_match = None
+            best_score = 0.0
+            best_classification = "unknown"
+            
+            for cand_skill in candidate_skills:
+                result = classify_skill_pair(pref_skill, cand_skill)
+                similarity = result["similarity"]
+                classification = result["classification"]
+                
+                weighted_score = similarity if classification == "equivalent" else (similarity * 0.7 if classification == "related" else 0.0)
+                
+                if weighted_score > best_score:
+                    best_score = weighted_score
+                    best_match = cand_skill
+                    best_classification = classification
+            
+            if best_score >= 0.7:
+                preferred_matched.append({
+                    "required": pref_skill,
+                    "matched_with": best_match,
+                    "score": best_score,
+                    "classification": best_classification
+                })
+                matched_candidate_skills.add(best_match)
+                preferred_score_bonus += 0.05  # bonus for each preferred skill matched
+            else:
+                preferred_missing.append(pref_skill)
+                
+            details[pref_skill] = {
+                "best_match": best_match,
+                "score": best_score,
+                "classification": best_classification
+            }
+            
         additional_skills = [skill for skill in candidate_skills if skill not in matched_candidate_skills]
         
         return {
             "score": round(min(skill_score, 1.0), 4),
+            "bonus_score": preferred_score_bonus,
             "matched": matched,
             "partial": partial_matches,
             "missing": missing,
+            "preferred_matched": preferred_matched,
+            "preferred_missing": preferred_missing,
             "additional": additional_skills,
             "details": details
         }
@@ -313,9 +358,9 @@ class ResumeMatchingEngine:
             }
         }
 
-    def extract_experience_years(self, text: str) -> tuple[float, str]:
+    def extract_experience_years(self, text: str, is_jd: bool = False) -> tuple[float, str]:
         text_lower = text.lower()
-        total_years = 0.0
+        extracted_years = []
         evidence_snippet = ""
         
         patterns = [
@@ -326,21 +371,38 @@ class ResumeMatchingEngine:
             r'(\d+)\s*yrs?',
         ]
         
+        remaining_text = text_lower
         for pattern in patterns:
-            for match in re.finditer(pattern, text_lower):
+            for match in re.finditer(pattern, remaining_text):
                 val_match = match.groups()
                 current_years = 0.0
                 if len(val_match) == 2 and val_match[0] and val_match[1]:
-                    current_years = (int(val_match[0]) + int(val_match[1])) / 2
+                    if is_jd:
+                        current_years = float(val_match[0])  # Use minimum required
+                    else:
+                        current_years = (float(val_match[0]) + float(val_match[1])) / 2
                 elif val_match[0]:
                     current_years = float(val_match[0])
                     
-                if current_years > total_years:
-                    total_years = current_years
-                    # Extract roughly 30 characters of context around the match
-                    start = max(0, match.start() - 30)
-                    end = min(len(text), match.end() + 30)
-                    evidence_snippet = "..." + text[start:end].replace('\n', ' ').strip() + "..."
+                if current_years > 0:
+                    extracted_years.append((current_years, match))
+            
+            # Remove matched patterns with spaces of same length to preserve indices
+            remaining_text = re.sub(pattern, lambda m: ' ' * len(m.group(0)), remaining_text)
+            
+        total_years = 0.0
+        
+        if extracted_years:
+            if is_jd:
+                best_match = min(extracted_years, key=lambda x: x[0])
+            else:
+                best_match = max(extracted_years, key=lambda x: x[0])
+                
+            total_years = best_match[0]
+            match = best_match[1]
+            start = max(0, match.start() - 30)
+            end = min(len(text), match.end() + 30)
+            evidence_snippet = "..." + text[start:end].replace('\n', ' ').strip() + "..."
                     
         if total_years == 0:
             # Check for months if no years were found
@@ -372,7 +434,7 @@ class ResumeMatchingEngine:
             ]
             months_pattern = '|'.join(months)
             
-            # Matches: "June 2025 - August 2025" or "Jan 2020 to Present"
+            
             date_range_pattern = rf'\b({months_pattern})\s+(\d{{4}})\s*(?:-|to|–|—)\s*(?:({months_pattern})\s+(\d{{4}})|present|current|now)\b'
             
             total_months = 0
@@ -405,7 +467,7 @@ class ResumeMatchingEngine:
                     
                 if end_year >= start_year:
                     months_diff = (end_year - start_year) * 12 + (end_month_idx - start_month_idx)
-                    # Add 1 to make it inclusive (e.g. Jan-Jan is 1 month, not 0)
+                    # adding 1 to make it inclusive 
                     if months_diff >= 0:
                         total_months += (months_diff + 1)
                         
@@ -550,6 +612,7 @@ class ResumeMatchingEngine:
     def calculate_overall_score(
         self,
         required_skills: List[str],
+        preferred_skills: List[str],
         candidate_skills: List[str],
         required_experience_years: float,
         candidate_resume_text: str,
@@ -558,7 +621,8 @@ class ResumeMatchingEngine:
         job_description: str = "",
         job_requirements: Optional[Dict[str, Any]] = None,
         use_dynamic_weights: bool = True,
-        custom_weights: Optional[Dict[str, float]] = None
+        custom_weights: Optional[Dict[str, float]] = None,
+        resume_sections: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         if custom_weights:
             weights = custom_weights
@@ -586,9 +650,11 @@ class ResumeMatchingEngine:
         
         skill_result = self.calculate_skill_match_score(
             required_skills,
+            preferred_skills,
             candidate_skills
         )
         skill_score = skill_result["score"]
+        bonus_score = skill_result.get("bonus_score", 0.0)
         
         semantic_result = self.calculate_semantic_match_score(
             required_skills,
@@ -615,7 +681,8 @@ class ResumeMatchingEngine:
             weights["skill_match"] * skill_score +
             weights["experience_match"] * experience_score +
             weights["keyword_match"] * keyword_score
-        )
+        ) + bonus_score
+        final_score = min(final_score, 1.0)
         
         confidence = self._calculate_confidence(
             skill_result, semantic_result, experience_result, keyword_result
@@ -637,7 +704,8 @@ class ResumeMatchingEngine:
             "skill_importance": job_requirements.get("skill_importance", {}) if job_requirements else {},
             "skill_frequency": job_requirements.get("skill_frequency", {}) if job_requirements else {},
             "has_projects": experience_result.get("has_projects", False),
-            "experience_difference": experience_result.get("difference", 0.0)
+            "experience_difference": experience_result.get("difference", 0.0),
+            "resume_sections": resume_sections or {}
         }
         recommendations = generate_recommendations(analysis_data)
         
@@ -676,6 +744,8 @@ class ResumeMatchingEngine:
             "confidence": confidence,
             "matched_skills": [s["matched_with"] for s in skill_result.get("matched", []) if s.get("matched_with")],
             "missing_skills": skill_result.get("missing", []),
+            "preferred_matched": [s["matched_with"] for s in skill_result.get("preferred_matched", []) if s.get("matched_with")],
+            "preferred_missing": skill_result.get("preferred_missing", []),
             "additional_skills": skill_result.get("additional", []),
             "strengths": insights["strengths"],
             "gaps": insights["gaps"],

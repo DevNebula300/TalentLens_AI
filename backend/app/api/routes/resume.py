@@ -14,7 +14,7 @@ from app.models.analysis import Analysis
 from app.services.pdf_parser import extract_text_from_pdf
 from app.services.section_detector import detect_sections
 from app.services.text_processor import clean_text
-from app.services.skill_extractor import extract_skills_from_text
+from app.services.skill_extractor import extract_skills_from_text, extract_categorized_skills
 from app.services.matching_engine import ResumeMatchingEngine
 
 
@@ -99,31 +99,37 @@ async def upload_resume(
         if jd_text and jd_text.strip():
             engine = ResumeMatchingEngine()
             
-            required_skills = extract_skills_from_text(jd_text)
-            candidate_skills = extract_skills_from_text(cleaned_text, allowed_from_urls=required_skills)
+            categorized_skills = extract_categorized_skills(jd_text)
+            required_skills = categorized_skills["must_have"]
+            preferred_skills = categorized_skills["preferred"]
+            all_required_skills = required_skills + preferred_skills
+            candidate_skills = extract_skills_from_text(cleaned_text, allowed_from_urls=all_required_skills)
             
             # Simple keyword extraction for JD keywords (just use the required skills as keywords for now)
             keywords = [sk.lower() for sk in required_skills]
             
             # Extract experience requirements
-            req_years_result = engine.extract_experience_years(jd_text)
+            req_years_result = engine.extract_experience_years(jd_text, is_jd=True)
             req_years = req_years_result[0] if isinstance(req_years_result, tuple) else req_years_result
             
             job_requirements = {
                 "required_skills": required_skills,
+                "preferred_skills": preferred_skills,
                 "required_years": req_years,
                 "keywords": keywords
             }
             
             match_result = engine.calculate_overall_score(
                 required_skills=required_skills,
+                preferred_skills=preferred_skills,
                 candidate_skills=candidate_skills,
                 required_experience_years=req_years,
                 candidate_resume_text=cleaned_text,
                 required_keywords=keywords,
                 job_description=jd_text,
                 job_requirements=job_requirements,
-                use_dynamic_weights=True
+                use_dynamic_weights=True,
+                resume_sections=sections
             )
             
             analysis = Analysis(
@@ -190,28 +196,34 @@ async def analyze_existing_resume(
         if jd_text and jd_text.strip():
             engine = ResumeMatchingEngine()
             
-            required_skills = extract_skills_from_text(jd_text)
-            candidate_skills = extract_skills_from_text(resume.raw_text, allowed_from_urls=required_skills)
+            categorized_skills = extract_categorized_skills(jd_text)
+            required_skills = categorized_skills["must_have"]
+            preferred_skills = categorized_skills["preferred"]
+            all_required_skills = required_skills + preferred_skills
+            candidate_skills = extract_skills_from_text(resume.raw_text, allowed_from_urls=all_required_skills)
             keywords = [sk.lower() for sk in required_skills]
             
-            req_years_result = engine.extract_experience_years(jd_text)
+            req_years_result = engine.extract_experience_years(jd_text, is_jd=True)
             req_years = req_years_result[0] if isinstance(req_years_result, tuple) else req_years_result
             
             job_requirements = {
                 "required_skills": required_skills,
+                "preferred_skills": preferred_skills,
                 "required_years": req_years,
                 "keywords": keywords
             }
             
             match_result = engine.calculate_overall_score(
                 required_skills=required_skills,
+                preferred_skills=preferred_skills,
                 candidate_skills=candidate_skills,
                 required_experience_years=req_years,
                 candidate_resume_text=resume.raw_text,
                 required_keywords=keywords,
                 job_description=jd_text,
                 job_requirements=job_requirements,
-                use_dynamic_weights=True
+                use_dynamic_weights=True,
+                resume_sections=sections
             )
             
             analysis = Analysis(

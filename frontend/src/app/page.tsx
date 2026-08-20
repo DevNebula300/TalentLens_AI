@@ -16,12 +16,12 @@ export default function Home() {
                 <p className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-lg">
                    Upload your resume and a job description to discover your compatibility, identify your strongest matches, and see where you can improve.
                 </p>
-                <div className="flex flex-wrap items-center gap-4 pt-2">
-                   <Link href="/analyze" className="group flex items-center gap-2 bg-[#363893] text-white px-7 py-3.5 rounded-full font-medium hover:bg-[#23245c] transition-all shadow-lg shadow-indigo-900/20">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2 w-full sm:w-auto">
+                   <Link href="/analyze" className="group flex items-center justify-center gap-2 bg-[#363893] text-white px-7 py-3.5 rounded-full font-medium hover:bg-[#23245c] transition-all shadow-lg shadow-indigo-900/20">
                      Analyze My Resume
                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                    </Link>
-                   <Link href="/how-it-works" className="flex items-center gap-2 px-7 py-3.5 rounded-full font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+                   <Link href="/how-it-works" className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
                      See How It Works
                    </Link>
                 </div>
