@@ -75,3 +75,45 @@ def extract_skills_from_text(text: str, allowed_from_urls: List[str] = None) -> 
             text_without_urls = re.sub(pattern, " ", text_without_urls)
             
     return list(found_skills)
+
+def extract_categorized_skills(text: str) -> dict:
+    """
+    Attempts to separate text into 'must-have' and 'preferred' sections,
+    then extracts skills from each.
+    """
+    must_have_text = text
+    preferred_text = ""
+    
+    
+    lower_text = text.lower()
+    split_keywords = [
+        "preferred qualifications", 
+        "nice to have", 
+        "nice-to-have", 
+        "bonus points for", 
+        "bonus skills", 
+        "preferred skills",
+        "plus:"
+    ]
+    
+    split_idx = -1
+    for keyword in split_keywords:
+        idx = lower_text.find(keyword)
+        if idx != -1:
+            if split_idx == -1 or idx < split_idx:
+                split_idx = idx
+                
+    if split_idx != -1:
+        must_have_text = text[:split_idx]
+        preferred_text = text[split_idx:]
+        
+    must_have_skills = extract_skills_from_text(must_have_text)
+    preferred_skills = extract_skills_from_text(preferred_text)
+    
+    
+    preferred_skills = [s for s in preferred_skills if s not in must_have_skills]
+    
+    return {
+        "must_have": must_have_skills,
+        "preferred": preferred_skills
+    }

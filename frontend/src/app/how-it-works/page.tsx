@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
   ];
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen py-12 px-6">
+    <div className="flex-1 w-full bg-[#fcf8ff] min-h-screen py-12 px-6">
       <div className="max-w-4xl mx-auto space-y-12">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">How It Works</h1>
@@ -50,11 +50,11 @@ export default function HowItWorksPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="divide-y divide-slate-100">
             {steps.map((step, idx) => (
-              <div key={idx} className="p-8 md:p-10 flex flex-col md:flex-row gap-6 md:items-start group hover:bg-slate-50/50 transition-colors">
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-100 shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+              <div key={idx} className="p-8 md:p-10 flex flex-col md:flex-row gap-6 md:items-start group hover:bg-[#fcf8ff]/50 transition-colors">
+                <div className="w-14 h-14 rounded-2xl bg-[#fcf8ff] flex items-center justify-center border border-slate-100 shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                   {step.icon}
                 </div>
                 <div className="flex-1 space-y-2 pt-2">

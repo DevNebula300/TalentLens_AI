@@ -1,3 +1,4 @@
+from functools import lru_cache
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -135,9 +136,6 @@ def normalize_skill(skill: str) -> str:
     """Normalize a skill by lowercasing and resolving common aliases."""
     normalized = skill.lower().strip()
     return SKILL_ALIASES.get(normalized, normalized)
-
-
-from functools import lru_cache
 
 @lru_cache(maxsize=10000)
 def calculate_similarity(skill_a: str, skill_b: str) -> float:

@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: talentlens-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: talentlens
+      POSTGRES_PASSWORD: talentlens
+      POSTGRES_DB: talentlens
+    ports:
+      - "5432:5432"
+    volumes:
+      - talentlens_postgres_data:/var/lib/postgresql/data
+    networks:
+      - talentlens_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: talentlens-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://talentlens:talentlens@postgres:5432/talentlens
+      # For production, set this to the actual frontend URL (e.g. https://yourdomain.com)
+      - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    networks:
+      - talentlens_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Since Next.js requires this at build time, it defaults to the backend's exposed URL.
+        # In a real production environment, this should be the public URL of the backend (e.g. https://api.yourdomain.com)
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: talentlens-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - talentlens_network
+
+volumes:
+  talentlens_postgres_data:
+
+networks:
+  talentlens_network:
+    driver: bridge
