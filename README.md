@@ -7,31 +7,31 @@ TalentLens AI is an AI powered resume analysis and scoring application. It extra
 ### Landing Page
 
 <div align="center">
-  <img src="../docs/landingpage.png" width="800" alt="Landing Page Screenshot" />
+  <img src="docs/landingpage.png" width="800" alt="Landing Page Screenshot" />
 </div>
 
 ### Resume & Job Description Analysis
 
 <div align="center">
-  <img src="../docs/analysispage.png" width="800" alt="Analysis Page Screenshot" />
+  <img src="docs/analysispage.png" width="800" alt="Analysis Page Screenshot" />
 </div>
 
 ### Analysis Results
 
 <div align="center">
-  <img src="../docs/resultpage1.png" width="800" alt="Results Breakdown" />
+  <img src="docs/resultpage1.png" width="800" alt="Results Breakdown" />
   <br/><br/>
-  <img src="../docs/resultpage2.png" width="800" alt="Detailed Skills and Keyword Results" />
+  <img src="docs/resultpage2.png" width="800" alt="Detailed Skills and Keyword Results" />
   <br/><br/>
-  <img src="../docs/resultpage3.png" width="800" alt="Additional Results" />
+  <img src="docs/resultpage3.png" width="800" alt="Additional Results" />
   <br/><br/>
-  <img src="../docs/resultpage4.png" width="800" alt="Original PDF and Extracted Text" />
+  <img src="docs/resultpage4.png" width="800" alt="Original PDF and Extracted Text" />
 </div>
 
 ### Analysis History
 
 <div align="center">
-  <img src="../docs/historypage.png" width="800" alt="History Page Screenshot" />
+  <img src="docs/historypage.png" width="800" alt="History Page Screenshot" />
 </div>
 
 ## Detailed Overview
