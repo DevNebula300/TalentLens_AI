@@ -1,10 +1,8 @@
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-import uuid
-import os
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Form
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
 

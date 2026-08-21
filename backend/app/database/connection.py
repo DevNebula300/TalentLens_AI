@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
@@ -15,7 +15,6 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL)
 
-from sqlalchemy import text
 with engine.connect() as conn:
     conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
     conn.commit()
