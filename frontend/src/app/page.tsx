@@ -3,7 +3,7 @@ import { ArrowRight, BarChart2, CheckCircle2, FileText, Lightbulb, Target, Trend
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100">
+    <div className="min-h-screen bg-[#fcf8ff] text-slate-900 font-sans selection:bg-indigo-100">
       {/* Hero Section */}
 
       {/* Hero Section */}
@@ -21,7 +21,7 @@ export default function Home() {
                      Analyze My Resume
                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                    </Link>
-                   <Link href="/how-it-works" className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+                   <Link href="/how-it-works" className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-medium text-slate-700 bg-[#fcf8ff] border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
                      See How It Works
                    </Link>
                 </div>
@@ -33,7 +33,7 @@ export default function Home() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] bg-gradient-to-tr from-indigo-100 to-blue-50 rounded-full blur-3xl opacity-70 -z-10"></div>
                 
                 {/* Main UI Card */}
-                <div className="relative bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] p-6 sm:p-8 overflow-hidden transform transition-transform hover:scale-[1.01] duration-500">
+                <div className="relative bg-[#fcf8ff]/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] p-6 sm:p-8 overflow-hidden transform transition-transform hover:scale-[1.01] duration-500">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-8">
                         <div className="flex items-center gap-4">
@@ -64,7 +64,7 @@ export default function Home() {
 
                     {/* Content Bars */}
                     <div className="space-y-4">
-                        <div className="group bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors">
+                        <div className="group bg-[#fcf8ff] p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors">
                            <div className="flex justify-between items-center mb-3">
                                <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
@@ -77,7 +77,7 @@ export default function Home() {
                            </div>
                         </div>
 
-                        <div className="group bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors">
+                        <div className="group bg-[#fcf8ff] p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors">
                            <div className="flex justify-between items-center mb-3">
                                <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -90,7 +90,7 @@ export default function Home() {
                            </div>
                         </div>
 
-                        <div className="group bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors">
+                        <div className="group bg-[#fcf8ff] p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-100 transition-colors">
                            <div className="flex justify-between items-center mb-3">
                                <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-amber-500"></div>
@@ -109,7 +109,7 @@ export default function Home() {
       </main>
 
       {/* Feature Grid Section */}
-      <section className="bg-white py-24 border-t border-slate-100 relative overflow-hidden" id="how-it-works">
+      <section className="bg-[#fcf8ff] py-24 border-t border-slate-100 relative overflow-hidden" id="how-it-works">
          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-indigo-100 to-transparent"></div>
          
          <div className="max-w-7xl mx-auto px-6 md:px-8">
@@ -159,7 +159,7 @@ export default function Home() {
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
     <div className="group flex flex-col items-start">
-       <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-white group-hover:shadow-md transition-all duration-300">
+       <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-[#fcf8ff] group-hover:shadow-md transition-all duration-300">
           {icon}
        </div>
        <h3 className="text-xl font-semibold text-slate-900 mb-3">{title}</h3>

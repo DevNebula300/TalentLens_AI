@@ -10,7 +10,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="relative z-50">
+    <nav className="sticky top-0 z-50 bg-[#fcf8ff] shadow-sm">
       <div className="flex items-center justify-between px-4 py-4 md:px-8 md:py-6 max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-8">
           <Logo />
@@ -47,7 +47,7 @@ export default function Navbar() {
       
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 w-full bg-white border-b border-slate-200 px-4 py-6 flex flex-col gap-5 shadow-lg md:hidden">
+        <div className="absolute top-full left-0 w-full bg-[#fcf8ff] border-b border-slate-200 px-4 py-6 flex flex-col gap-5 shadow-lg md:hidden">
           <Link 
             href="/analyze" 
             onClick={() => setIsOpen(false)} 

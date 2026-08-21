@@ -3,6 +3,7 @@
 import { FileText, PlusCircle, Calendar, ChevronRight, Target, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function HistoryPage() {
   const [historyItems, setHistoryItems] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export default function HistoryPage() {
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const response = await fetch("http://localhost:8000/api/resume/history");
+        const response = await fetch(`${API_BASE_URL}/api/resume/history`);
         if (!response.ok) {
           throw new Error("Failed to fetch history");
         }
@@ -33,7 +34,7 @@ export default function HistoryPage() {
     if (!confirm("Are you sure you want to delete this analysis?")) return;
     
     try {
-      const response = await fetch(`http://localhost:8000/api/resume/analysis/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/resume/analysis/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -60,7 +61,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen py-8 md:py-12 px-4 md:px-6">
+    <div className="flex-1 w-full bg-[#fcf8ff] min-h-screen py-8 md:py-12 px-4 md:px-6">
       <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
         <div className="flex items-center justify-between">
           <div>
@@ -82,7 +83,7 @@ export default function HistoryPage() {
         )}
 
         {historyItems.length > 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="divide-y divide-slate-100">
               {historyItems.map((item) => (
                 <Link 
@@ -138,7 +139,7 @@ export default function HistoryPage() {
           </div>
         ) : (
           !isLoading && !error && (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+            <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm p-16 flex flex-col items-center justify-center text-center">
               <div className="w-20 h-20 rounded-[2rem] bg-[#f0f1ff] flex items-center justify-center mb-6 shadow-sm border border-[#d6d8f5]">
                 <FileText className="w-10 h-10 text-[#363893]" />
               </div>

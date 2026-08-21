@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import DateTime, String, Text, LargeBinary
+
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.connection import Base
@@ -24,8 +26,13 @@ class Resume(Base):
         nullable=False,
     )
 
-    file_path: Mapped[str | None] = mapped_column(
-        String(500),
+    pdf_content: Mapped[bytes | None] = mapped_column(
+        LargeBinary,
+        nullable=True,
+    )
+
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(384),
         nullable=True,
     )
 

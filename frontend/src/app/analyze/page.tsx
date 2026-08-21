@@ -3,6 +3,7 @@
 import { FileText, Upload, Briefcase, File, X, History, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function AnalyzePage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function AnalyzePage() {
   useEffect(() => {
     async function fetchResumes() {
       try {
-        const response = await fetch("http://localhost:8000/api/resume/list");
+        const response = await fetch(`${API_BASE_URL}/api/resume/list`);
         if (response.ok) {
           const data = await response.json();
           setExistingResumes(data);
@@ -77,15 +78,18 @@ export default function AnalyzePage() {
     setIsLoading(true);
     setResult(null);
     try {
+      let endpoint = `${API_BASE_URL}/api/resume/upload`;
       const formData = new FormData();
-      
-      let endpoint = "http://localhost:8000/api/resume/upload";
 
+      if (resumeInputMode === 'existing' && selectedResumeId) {
+        endpoint = `${API_BASE_URL}/api/resume/analyze-existing`;
+      }
+      
       if (resumeInputMode === 'file' && resumeFile) {
         formData.append("file", resumeFile);
       } else if (resumeInputMode === 'existing' && selectedResumeId) {
         formData.append("resume_id", selectedResumeId.toString());
-        endpoint = "http://localhost:8000/api/resume/analyze-existing";
+        endpoint = "http://127.0.0.1:8000/api/resume/analyze-existing";
       }
       
       if (jdInputMode === 'text' && jdText.trim()) {
@@ -125,7 +129,7 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen py-8 md:py-12 px-4 md:px-6">
+    <div className="flex-1 w-full bg-[#fcf8ff] min-h-screen py-8 md:py-12 px-4 md:px-6">
       <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">New Analysis</h1>
@@ -134,7 +138,7 @@ export default function AnalyzePage() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Resume Selection */}
-          <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-200 flex flex-col min-w-0">
+          <div className="bg-[#fcf8ff] rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-200 flex flex-col min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#363893] flex items-center justify-center">
@@ -145,13 +149,13 @@ export default function AnalyzePage() {
               <div className="flex items-center bg-slate-100 p-1 rounded-lg">
                 <button 
                   onClick={() => setResumeInputMode('file')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${resumeInputMode === 'file' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${resumeInputMode === 'file' ? 'bg-[#fcf8ff] text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   Upload
                 </button>
                 <button 
                   onClick={() => setResumeInputMode('existing')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${resumeInputMode === 'existing' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${resumeInputMode === 'existing' ? 'bg-[#fcf8ff] text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   Existing
                 </button>
@@ -180,7 +184,7 @@ export default function AnalyzePage() {
                   <div className="flex flex-col items-center text-center w-full">
                     <button 
                       onClick={(e) => { e.stopPropagation(); setResumeFile(null); }}
-                      className="absolute top-4 right-4 p-2 bg-white hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-full transition-colors shadow-sm border border-slate-100"
+                      className="absolute top-4 right-4 p-2 bg-[#fcf8ff] hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-full transition-colors shadow-sm border border-slate-100"
                       title="Remove file"
                     >
                       <X className="w-5 h-5" />
@@ -194,7 +198,7 @@ export default function AnalyzePage() {
                   </div>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-slate-50 group-hover:bg-white flex items-center justify-center mb-4 transition-colors shadow-sm border border-slate-100">
+                    <div className="w-16 h-16 rounded-full bg-slate-50 group-hover:bg-[#fcf8ff] flex items-center justify-center mb-4 transition-colors shadow-sm border border-slate-100">
                       <Upload className={`w-6 h-6 transition-colors ${isDraggingResume ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-600'}`} />
                     </div>
                     <p className="text-slate-700 font-medium text-center">Click to upload or drag and drop</p>
@@ -213,7 +217,7 @@ export default function AnalyzePage() {
                         className={`flex items-center justify-between p-4 mb-2 rounded-xl cursor-pointer transition-all border ${
                           selectedResumeId === resume.id 
                             ? 'bg-indigo-50 border-indigo-200 shadow-sm' 
-                            : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
+                            : 'bg-[#fcf8ff] border-transparent hover:border-slate-200 hover:shadow-sm'
                         }`}
                       >
                         <div className="flex items-center gap-4">
@@ -250,7 +254,7 @@ export default function AnalyzePage() {
           </div>
 
           {/* JD Upload */}
-          <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-200 flex flex-col min-w-0">
+          <div className="bg-[#fcf8ff] rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-200 flex flex-col min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -262,13 +266,13 @@ export default function AnalyzePage() {
               <div className="flex items-center bg-slate-100 p-1 rounded-lg">
                 <button 
                   onClick={() => setJdInputMode('file')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${jdInputMode === 'file' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${jdInputMode === 'file' ? 'bg-[#fcf8ff] text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   File
                 </button>
                 <button 
                   onClick={() => setJdInputMode('text')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${jdInputMode === 'text' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${jdInputMode === 'text' ? 'bg-[#fcf8ff] text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                   Text
                 </button>
@@ -297,7 +301,7 @@ export default function AnalyzePage() {
                   <div className="flex flex-col items-center text-center w-full">
                     <button 
                       onClick={(e) => { e.stopPropagation(); setJdFile(null); }}
-                      className="absolute top-4 right-4 p-2 bg-white hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-full transition-colors shadow-sm border border-slate-100"
+                      className="absolute top-4 right-4 p-2 bg-[#fcf8ff] hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-full transition-colors shadow-sm border border-slate-100"
                       title="Remove file"
                     >
                       <X className="w-5 h-5" />
@@ -311,7 +315,7 @@ export default function AnalyzePage() {
                   </div>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-slate-50 group-hover:bg-white flex items-center justify-center mb-4 transition-colors shadow-sm border border-slate-100">
+                    <div className="w-16 h-16 rounded-full bg-slate-50 group-hover:bg-[#fcf8ff] flex items-center justify-center mb-4 transition-colors shadow-sm border border-slate-100">
                       <Upload className={`w-6 h-6 transition-colors ${isDraggingJd ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-600'}`} />
                     </div>
                     <p className="text-slate-700 font-medium text-center">Click to upload or drag and drop</p>

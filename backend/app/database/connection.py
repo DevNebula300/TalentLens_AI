@@ -15,6 +15,11 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL)
 
+from sqlalchemy import text
+with engine.connect() as conn:
+    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+    conn.commit()
+
 SessionLocal = sessionmaker(
     bind=engine,
     autocommit=False,

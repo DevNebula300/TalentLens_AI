@@ -4,7 +4,7 @@ import uuid
 import os
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -16,6 +16,7 @@ from app.services.section_detector import detect_sections
 from app.services.text_processor import clean_text
 from app.services.skill_extractor import extract_skills_from_text, extract_categorized_skills
 from app.services.matching_engine import ResumeMatchingEngine
+from app.services.embedding_service import generate_document_embedding
 
 
 router = APIRouter(
@@ -45,16 +46,13 @@ async def upload_resume(
             detail="Uploaded resume file is empty.",
         )
 
-    UPLOADS_DIR = Path("uploads/resumes")
-    UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-    
-    file_id = uuid.uuid4().hex
-    saved_file_path = UPLOADS_DIR / f"{file_id}.pdf"
-    
-    with open(saved_file_path, "wb") as f:
-        f.write(contents)
-        
+    resume_temp_path = None
     jd_temp_path = None
+    
+    with NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        temp_file.write(contents)
+        resume_temp_path = Path(temp_file.name)
+        
     if jd_file and jd_file.filename:
         jd_contents = await jd_file.read()
         with NamedTemporaryFile(suffix=".pdf", delete=False) as jd_temp_file:
@@ -63,7 +61,7 @@ async def upload_resume(
 
     try:
         # extract pdf
-        raw_text = extract_text_from_pdf(str(saved_file_path))
+        raw_text = extract_text_from_pdf(str(resume_temp_path))
 
         # clean extracted text
         cleaned_text = clean_text(raw_text)
@@ -76,11 +74,15 @@ async def upload_resume(
             raw_jd = extract_text_from_pdf(str(jd_temp_path))
             jd_text = clean_text(raw_jd)
 
+        # generate embedding for resume text
+        resume_embedding = generate_document_embedding(cleaned_text)
+
         # create Resume database record
         resume = Resume(
             filename=file.filename,
             raw_text=cleaned_text,
-            file_path=str(saved_file_path)
+            pdf_content=contents,
+            embedding=resume_embedding
         )
 
         # save to PostgreSQL
@@ -132,9 +134,12 @@ async def upload_resume(
                 resume_sections=sections
             )
             
+            jd_embedding_vec = generate_document_embedding(jd_text)
+            
             analysis = Analysis(
                 resume_id=resume.id,
                 job_description=jd_text,
+                jd_embedding=jd_embedding_vec,
                 overall_score=match_result.get("overall_score"),
                 match_result=match_result
             )
@@ -150,6 +155,8 @@ async def upload_resume(
     finally:
         if jd_temp_path:
             jd_temp_path.unlink(missing_ok=True)
+        if resume_temp_path:
+            resume_temp_path.unlink(missing_ok=True)
 
 
 @router.get("/list")
@@ -226,9 +233,12 @@ async def analyze_existing_resume(
                 resume_sections=sections
             )
             
+            jd_embedding_vec = generate_document_embedding(jd_text)
+            
             analysis = Analysis(
                 resume_id=resume.id,
                 job_description=jd_text,
+                jd_embedding=jd_embedding_vec,
                 overall_score=match_result.get("overall_score"),
                 match_result=match_result
             )
@@ -251,14 +261,13 @@ def get_resume_pdf(resume_id: int, db: Session = Depends(get_db)):
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
         
-    if not resume.file_path or not os.path.exists(resume.file_path):
-        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+    if not resume.pdf_content:
+        raise HTTPException(status_code=404, detail="PDF file not found in database")
         
-    return FileResponse(
-        path=resume.file_path,
+    return Response(
+        content=resume.pdf_content,
         media_type="application/pdf",
-        filename=resume.filename,
-        content_disposition_type="inline"
+        headers={"Content-Disposition": f'inline; filename="{resume.filename}"'}
     )
 
 
@@ -294,7 +303,7 @@ def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
     resume = db.query(Resume).filter(Resume.id == analysis.resume_id).first()
     
     has_pdf = False
-    if resume and resume.file_path and os.path.exists(resume.file_path):
+    if resume and resume.pdf_content:
         has_pdf = True
     
     return {

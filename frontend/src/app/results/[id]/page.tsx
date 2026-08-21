@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, Download, Target, CheckCircle2, Zap, Lightbulb, X 
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
+import { API_BASE_URL } from "@/lib/api";
 
 // highlight text component
 
@@ -73,7 +73,7 @@ export default function ResultPage() {
   useEffect(() => {
     async function fetchAnalysis() {
       try {
-        const response = await fetch(`http://localhost:8000/api/resume/analysis/${params.id}`);
+        const response = await fetch(`${API_BASE_URL}/api/resume/analysis/${params.id}`);
         if (!response.ok) {
           throw new Error("Failed to fetch analysis");
         }
@@ -108,7 +108,7 @@ export default function ResultPage() {
   if (error || !analysis) {
     return (
       <div className="flex-1 w-full bg-slate-50 min-h-screen py-10 px-6 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-3xl border border-red-200 text-center max-w-md shadow-sm">
+        <div className="bg-[#fcf8ff] p-8 rounded-3xl border border-red-200 text-center max-w-md shadow-sm">
           <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8" />
           </div>
@@ -125,7 +125,7 @@ export default function ResultPage() {
   const result = analysis.match_result;
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen py-6 md:py-10 px-4 md:px-6">
+    <div className="flex-1 w-full bg-[#fcf8ff] min-h-screen py-6 md:py-10 px-4 md:px-6">
       <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
         
         {/* header navigation */}
@@ -137,7 +137,7 @@ export default function ResultPage() {
         </div>
 
       
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
+        <div className="bg-[#fcf8ff] rounded-[2rem] border border-slate-200 shadow-sm p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
            <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 sm:gap-6">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center border border-indigo-100 shadow-sm shrink-0">
                   <FileText className="w-8 h-8 text-[#363893]" />
@@ -183,7 +183,7 @@ export default function ResultPage() {
            <div className="lg:col-span-2 space-y-8 min-w-0">
               
              
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 overflow-hidden">
+              <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 overflow-hidden">
                  <div className="flex items-center gap-3 mb-6">
                     <Target className="w-6 h-6 text-[#363893]" />
                     <h2 className="text-xl font-bold text-slate-900">Score Breakdown</h2>
@@ -220,7 +220,7 @@ export default function ResultPage() {
                           <Target className="w-5 h-5 text-indigo-500" />
                           <span>Detailed Calculation & AI Reasoning</span>
                         </div>
-                        <span className="transition-transform group-open:rotate-180 bg-white p-1 rounded-full shadow-sm border border-slate-200">
+                        <span className="transition-transform group-open:rotate-180 bg-[#fcf8ff] p-1 rounded-full shadow-sm border border-slate-200">
                           <svg fill="none" height="18" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="18"><path d="M6 9l6 6 6-6"></path></svg>
                         </span>
                       </summary>
@@ -233,7 +233,7 @@ export default function ResultPage() {
                           { id: "experience", name: "Experience Level", key: "experience_match" },
                           { id: "keyword", name: "Keyword Alignment", key: "keyword_match" },
                         ].map((row) => (
-                          <div key={row.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                          <div key={row.id} className="bg-[#fcf8ff] p-4 rounded-xl shadow-sm border border-slate-200">
                             <div className="font-bold text-slate-800 text-base mb-4 border-b border-slate-100 pb-2">{row.name}</div>
                             
                             <div className="flex flex-col gap-3 mb-4 text-sm">
@@ -261,14 +261,14 @@ export default function ResultPage() {
                           </div>
                         ))}
                         
-                        <div className="bg-white p-4 rounded-xl shadow-sm border-2 border-emerald-100 flex justify-between items-center mt-2">
+                        <div className="bg-[#fcf8ff] p-4 rounded-xl shadow-sm border-2 border-emerald-100 flex justify-between items-center mt-2">
                           <div className="font-bold text-slate-700 uppercase tracking-wider text-xs">Final Overall Score</div>
                           <div className="font-mono font-bold text-emerald-600 text-xl">{Math.round(result.overall_score * 100)}%</div>
                         </div>
                       </div>
 
                       {/* Desktop Table View */}
-                      <div className="hidden md:block border-t border-slate-200 bg-white overflow-x-auto max-w-full w-full">
+                      <div className="hidden md:block border-t border-slate-200 bg-[#fcf8ff] overflow-x-auto max-w-full w-full">
                         <table className="w-full text-left text-sm text-slate-600 min-w-[600px]">
                           <thead className="bg-slate-50/80 text-slate-500 uppercase text-xs tracking-wider border-b border-slate-200">
                             <tr>
@@ -312,7 +312,7 @@ export default function ResultPage() {
                               <td colSpan={3} className="px-6 py-4 text-right font-bold text-slate-700 uppercase tracking-wider text-xs">
                                 Final Overall Compatibility Score
                               </td>
-                              <td className="px-6 py-4 text-center font-mono font-bold text-emerald-600 text-lg border-x border-slate-200 bg-white shadow-inner">
+                              <td className="px-6 py-4 text-center font-mono font-bold text-emerald-600 text-lg border-x border-slate-200 bg-[#fcf8ff] shadow-inner">
                                 {Math.round(result.overall_score * 100)}%
                               </td>
                               <td></td>
@@ -393,7 +393,7 @@ export default function ResultPage() {
 
            
            <div className="space-y-6 min-w-0">
-             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+             <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm p-6">
                  <h3 className="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-4">Skills Analysis</h3>
                  
                  <div className="space-y-6">
@@ -482,7 +482,7 @@ export default function ResultPage() {
         
         <div className="grid lg:grid-cols-2 gap-8">
             
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 overflow-hidden min-w-0">
+            <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 overflow-hidden min-w-0">
                 <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <svg className="w-6 h-6 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                   Original PDF Document
@@ -490,7 +490,7 @@ export default function ResultPage() {
                 <div className="h-[600px] w-full rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex flex-col items-center justify-center">
                   {analysis.has_pdf ? (
                     <iframe 
-                      src={`http://localhost:8000/api/resume/file/${analysis.resume_id}`} 
+                      src={`${API_BASE_URL}/api/resume/file/${analysis.resume_id}`} 
                       className="w-full h-full"
                       title="Resume PDF"
                     />
@@ -507,7 +507,7 @@ export default function ResultPage() {
             </div>
 
             
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 overflow-hidden min-w-0">
+            <div className="bg-[#fcf8ff] rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 overflow-hidden min-w-0">
                 <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <FileText className="w-6 h-6 text-indigo-500" />
                   Extracted Text & Highlights
