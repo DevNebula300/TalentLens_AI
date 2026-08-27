@@ -326,7 +326,7 @@ export default function AnalyzePage() {
             ) : (
               <div className="flex-1 flex flex-col min-h-[300px]">
                 <textarea 
-                  className="w-full h-full min-h-[300px] flex-1 p-5 rounded-2xl border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none resize-none transition-all placeholder:text-slate-400"
+                  className="w-full h-full min-h-[300px] flex-1 p-5 rounded-2xl border border-slate-200 bg-white text-slate-900 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none resize-none transition-all placeholder:text-slate-400"
                   placeholder="Paste the job description text here..."
                   value={jdText}
                   onChange={(e) => setJdText(e.target.value)}
