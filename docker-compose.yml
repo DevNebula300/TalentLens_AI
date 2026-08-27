@@ -21,7 +21,7 @@ services:
     container_name: talentlens-backend
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://talentlens:talentlens@postgres:5432/talentlens
+      - DATABASE_URL=postgresql+psycopg://talentlens:talentlens@postgres:5432/talentlens
       # For production, set this to the actual frontend URL (e.g. https://yourdomain.com)
       - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     ports:

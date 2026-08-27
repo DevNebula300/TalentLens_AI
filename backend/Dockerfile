@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Install CPU-only torch first (default Linux wheel pulls multi-GB CUDA deps)
+RUN grep -v '^torch==' requirements.txt > /tmp/requirements-no-torch.txt \
+    && pip install --no-cache-dir torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir -r /tmp/requirements-no-torch.txt
 
 # Download spaCy model
 RUN python -m spacy download en_core_web_sm
