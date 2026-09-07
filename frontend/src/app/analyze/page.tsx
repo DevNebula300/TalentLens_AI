@@ -3,7 +3,7 @@
 import { FileText, Upload, Briefcase, File, X, History, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, apiFetch } from "@/lib/api";
 
 export default function AnalyzePage() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export default function AnalyzePage() {
   useEffect(() => {
     async function fetchResumes() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/resume/list`);
+        const response = await apiFetch(`${API_BASE_URL}/api/resume/list`);
         if (response.ok) {
           const data = await response.json();
           setExistingResumes(data);
@@ -89,7 +89,6 @@ export default function AnalyzePage() {
         formData.append("file", resumeFile);
       } else if (resumeInputMode === 'existing' && selectedResumeId) {
         formData.append("resume_id", selectedResumeId.toString());
-        endpoint = "http://127.0.0.1:8000/api/resume/analyze-existing";
       }
       
       if (jdInputMode === 'text' && jdText.trim()) {
@@ -98,7 +97,7 @@ export default function AnalyzePage() {
         formData.append("jd_file", jdFile);
       }
       
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: "POST",
         body: formData,
       });

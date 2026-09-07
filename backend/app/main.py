@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.api.routes.resume import router as resume_router
 from app.database.connection import Base, engine
@@ -8,6 +9,21 @@ from app.models import Analysis, Resume  # noqa: F401
 
 
 Base.metadata.create_all(bind=engine)
+
+# create_all does not alter existing tables — ensure owner isolation column exists
+with engine.begin() as conn:
+    conn.execute(
+        text(
+            "ALTER TABLE resumes "
+            "ADD COLUMN IF NOT EXISTS owner_id VARCHAR(36)"
+        )
+    )
+    conn.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_resumes_owner_id "
+            "ON resumes (owner_id)"
+        )
+    )
 
 
 app = FastAPI(

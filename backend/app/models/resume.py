@@ -21,6 +21,13 @@ class Resume(Base):
         nullable=False,
     )
 
+    # Browser-scoped owner token — isolates each visitor's resumes from others
+    owner_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        index=True,
+    )
+
     raw_text: Mapped[str] = mapped_column(
         Text,
         nullable=False,

@@ -1,10 +1,7 @@
 from functools import lru_cache
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
+from app.services.embedding_model import get_embedding_model
 
 
 SKILL_ALIASES = {
@@ -149,7 +146,7 @@ def calculate_similarity(skill_a: str, skill_b: str) -> float:
     if norm_a == norm_b:
         return 1.0
 
-    embeddings = model.encode(
+    embeddings = get_embedding_model().encode(
         [norm_a, norm_b],
         normalize_embeddings=True,
     )
@@ -219,4 +216,4 @@ def classify_skill_pair(
         "classification": classification,
     }
 
-
+

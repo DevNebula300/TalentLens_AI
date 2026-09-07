@@ -3,7 +3,7 @@
 import { FileText, PlusCircle, Calendar, ChevronRight, Target, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, apiFetch } from "@/lib/api";
 
 export default function HistoryPage() {
   const [historyItems, setHistoryItems] = useState<any[]>([]);
@@ -13,7 +13,7 @@ export default function HistoryPage() {
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/resume/history`);
+        const response = await apiFetch(`${API_BASE_URL}/api/resume/history`);
         if (!response.ok) {
           throw new Error("Failed to fetch history");
         }
@@ -34,7 +34,7 @@ export default function HistoryPage() {
     if (!confirm("Are you sure you want to delete this analysis?")) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/resume/analysis/${id}`, {
+      const response = await apiFetch(`${API_BASE_URL}/api/resume/analysis/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) {

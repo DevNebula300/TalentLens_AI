@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, Download, Target, CheckCircle2, Zap, Lightbulb, X 
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, apiFetch } from "@/lib/api";
 
 // highlight text component
 
@@ -69,16 +69,28 @@ export default function ResultPage() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    let objectUrl: string | null = null;
+
     async function fetchAnalysis() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/resume/analysis/${params.id}`);
+        const response = await apiFetch(`${API_BASE_URL}/api/resume/analysis/${params.id}`);
         if (!response.ok) {
           throw new Error("Failed to fetch analysis");
         }
         const data = await response.json();
         setAnalysis(data);
+
+        if (data.has_pdf && data.resume_id) {
+          const pdfResponse = await apiFetch(`${API_BASE_URL}/api/resume/file/${data.resume_id}`);
+          if (pdfResponse.ok) {
+            const blob = await pdfResponse.blob();
+            objectUrl = URL.createObjectURL(blob);
+            setPdfUrl(objectUrl);
+          }
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -89,6 +101,12 @@ export default function ResultPage() {
     if (params.id) {
       fetchAnalysis();
     }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [params.id]);
 
   if (isLoading) {
@@ -488,12 +506,16 @@ export default function ResultPage() {
                   Original PDF Document
                 </h3>
                 <div className="h-[600px] w-full rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex flex-col items-center justify-center">
-                  {analysis.has_pdf ? (
+                  {analysis.has_pdf && pdfUrl ? (
                     <iframe 
-                      src={`${API_BASE_URL}/api/resume/file/${analysis.resume_id}`} 
+                      src={pdfUrl} 
                       className="w-full h-full"
                       title="Resume PDF"
                     />
+                  ) : analysis.has_pdf ? (
+                    <div className="text-center p-8">
+                      <p className="text-slate-500 font-medium mb-2">Loading PDF...</p>
+                    </div>
                   ) : (
                     <div className="text-center p-8">
                       <svg className="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

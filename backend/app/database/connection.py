@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 load_dotenv()
@@ -18,7 +19,13 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-engine = create_engine(DATABASE_URL)
+# NullPool: open a connection per request and close it immediately.
+# Persistent pools keep outbound traffic alive and block Railway Serverless sleep.
+engine = create_engine(
+    DATABASE_URL,
+    poolclass=NullPool,
+    connect_args={"connect_timeout": 10},
+)
 
 with engine.connect() as conn:
     conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))

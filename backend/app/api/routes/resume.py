@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
 
+from app.api.deps import get_owner_id
 from app.database.connection import get_db
 from app.models.resume import Resume
 from app.models.analysis import Analysis
@@ -23,12 +24,36 @@ router = APIRouter(
 )
 
 
+def _get_owned_resume(db: Session, resume_id: int, owner_id: str) -> Resume:
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.owner_id == owner_id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return resume
+
+
+def _get_owned_analysis(db: Session, analysis_id: int, owner_id: str) -> tuple[Analysis, Resume]:
+    row = (
+        db.query(Analysis, Resume)
+        .join(Resume, Analysis.resume_id == Resume.id)
+        .filter(Analysis.id == analysis_id, Resume.owner_id == owner_id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return row
+
+
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
     jd_text: Optional[str] = Form(None),
     jd_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
 ):
     if file.content_type != "application/pdf":
         raise HTTPException(
@@ -75,9 +100,10 @@ async def upload_resume(
         # generate embedding for resume text
         resume_embedding = generate_document_embedding(cleaned_text)
 
-        # create Resume database record
+        # create Resume database record scoped to this visitor
         resume = Resume(
             filename=file.filename,
+            owner_id=owner_id,
             raw_text=cleaned_text,
             pdf_content=contents,
             embedding=resume_embedding
@@ -158,8 +184,16 @@ async def upload_resume(
 
 
 @router.get("/list")
-def list_resumes(db: Session = Depends(get_db)):
-    resumes = db.query(Resume).order_by(Resume.created_at.desc()).all()
+def list_resumes(
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+):
+    resumes = (
+        db.query(Resume)
+        .filter(Resume.owner_id == owner_id)
+        .order_by(Resume.created_at.desc())
+        .all()
+    )
     return [{"id": r.id, "filename": r.filename, "created_at": r.created_at} for r in resumes]
 
 
@@ -169,10 +203,9 @@ async def analyze_existing_resume(
     jd_text: Optional[str] = Form(None),
     jd_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
 ):
-    resume = db.query(Resume).filter(Resume.id == resume_id).first()
-    if not resume:
-        raise HTTPException(status_code=404, detail="Resume not found")
+    resume = _get_owned_resume(db, resume_id, owner_id)
 
     jd_temp_path = None
     if jd_file and jd_file.filename:
@@ -254,10 +287,12 @@ async def analyze_existing_resume(
 
 
 @router.get("/file/{resume_id}")
-def get_resume_pdf(resume_id: int, db: Session = Depends(get_db)):
-    resume = db.query(Resume).filter(Resume.id == resume_id).first()
-    if not resume:
-        raise HTTPException(status_code=404, detail="Resume not found")
+def get_resume_pdf(
+    resume_id: int,
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+):
+    resume = _get_owned_resume(db, resume_id, owner_id)
         
     if not resume.pdf_content:
         raise HTTPException(status_code=404, detail="PDF file not found in database")
@@ -270,8 +305,17 @@ def get_resume_pdf(resume_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/history")
-def get_history(db: Session = Depends(get_db)):
-    analyses = db.query(Analysis, Resume).join(Resume).order_by(Analysis.created_at.desc()).all()
+def get_history(
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+):
+    analyses = (
+        db.query(Analysis, Resume)
+        .join(Resume, Analysis.resume_id == Resume.id)
+        .filter(Resume.owner_id == owner_id)
+        .order_by(Analysis.created_at.desc())
+        .all()
+    )
     
     result = []
     for analysis, resume in analyses:
@@ -293,22 +337,20 @@ def get_history(db: Session = Depends(get_db)):
 
 
 @router.get("/analysis/{analysis_id}")
-def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
-    analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
-    if not analysis:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-        
-    resume = db.query(Resume).filter(Resume.id == analysis.resume_id).first()
+def get_analysis(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+):
+    analysis, resume = _get_owned_analysis(db, analysis_id, owner_id)
     
-    has_pdf = False
-    if resume and resume.pdf_content:
-        has_pdf = True
+    has_pdf = bool(resume.pdf_content)
     
     return {
         "id": analysis.id,
         "resume_id": resume.id,
-        "filename": resume.filename if resume else None,
-        "resume_text": resume.raw_text if resume else None,
+        "filename": resume.filename,
+        "resume_text": resume.raw_text,
         "has_pdf": has_pdf,
         "job_description": analysis.job_description,
         "overall_score": analysis.overall_score,
@@ -317,10 +359,12 @@ def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
     }
 
 @router.delete("/analysis/{analysis_id}")
-def delete_analysis(analysis_id: int, db: Session = Depends(get_db)):
-    analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
-    if not analysis:
-        raise HTTPException(status_code=404, detail="Analysis not found")
+def delete_analysis(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+):
+    analysis, _resume = _get_owned_analysis(db, analysis_id, owner_id)
         
     db.delete(analysis)
     db.commit()

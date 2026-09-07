@@ -1,7 +1,5 @@
-from sentence_transformers import SentenceTransformer
+from app.services.embedding_model import get_embedding_model
 
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def generate_document_embedding(text: str) -> list[float]:
     """
@@ -11,6 +9,7 @@ def generate_document_embedding(text: str) -> list[float]:
     if not text or not text.strip():
         # Return a zero vector  if no text
         return [0.0] * 384
-        
+
+    model = get_embedding_model()
     embedding = model.encode(text, normalize_embeddings=True)
     return embedding.tolist()

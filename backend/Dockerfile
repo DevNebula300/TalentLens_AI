@@ -2,6 +2,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Keep CPU/RAM low on Railway Hobby (billable while awake)
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    OMP_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    TORCH_NUM_THREADS=1 \
+    TOKENIZERS_PARALLELISM=false \
+    HF_HUB_DISABLE_TELEMETRY=1
+
 # Install system dependencies needed for compiling some python packages (e.g., psycopg2, pgvector, etc)
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -25,4 +35,5 @@ RUN mkdir -p uploads/resumes
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Single worker; Railway injects $PORT
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
