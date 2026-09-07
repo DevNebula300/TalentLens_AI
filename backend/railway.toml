@@ -1,6 +1,5 @@
 # Config for Railway service (root directory should be `backend`)
-# Serverless sleep must still be toggled in the dashboard:
-# Settings → Deploy → Serverless → Enable
+# Enable Serverless in the dashboard: Settings → Deploy → Serverless
 
 [build]
 builder = "DOCKERFILE"
@@ -9,14 +8,13 @@ dockerfilePath = "Dockerfile"
 [deploy]
 numReplicas = 1
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 5
 healthcheckPath = "/health"
 healthcheckTimeout = 300
-# Avoid overlapping old+new containers (2x RAM during deploys)
 overlapSeconds = 0
 drainingSeconds = 10
 
-# Cap billed resources while awake (torch + MiniLM needs ~1GB+)
+# Allow enough RAM for torch/MiniLM; billed only while awake
 [deploy.limitOverride.containers]
 cpu = 1
-memoryBytes = 1610612736
+memoryBytes = 2147483648

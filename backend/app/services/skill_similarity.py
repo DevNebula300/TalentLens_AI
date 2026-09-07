@@ -1,5 +1,4 @@
 from functools import lru_cache
-from sklearn.metrics.pairwise import cosine_similarity
 
 from app.services.embedding_model import get_embedding_model
 
@@ -145,6 +144,8 @@ def calculate_similarity(skill_a: str, skill_b: str) -> float:
 
     if norm_a == norm_b:
         return 1.0
+
+    from sklearn.metrics.pairwise import cosine_similarity
 
     embeddings = get_embedding_model().encode(
         [norm_a, norm_b],

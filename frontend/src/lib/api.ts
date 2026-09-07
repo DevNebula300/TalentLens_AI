@@ -22,27 +22,36 @@ function sleep(ms: number) {
 
 /**
  * fetch wrapper that always sends the owner identity header.
- * Retries briefly on 502/503 so Railway Serverless cold starts don't fail the first click.
+ * Retries on 502/503 for Railway Serverless cold starts (can take a while).
  */
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set("X-Owner-Id", getOwnerId());
 
-  const maxAttempts = 3;
+  const maxAttempts = 5;
   let lastResponse: Response | null = null;
+  let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const response = await fetch(input, { ...init, headers });
-    lastResponse = response;
+    try {
+      const response = await fetch(input, { ...init, headers });
+      lastResponse = response;
 
-    if (response.status !== 502 && response.status !== 503) {
-      return response;
+      if (response.status !== 502 && response.status !== 503) {
+        return response;
+      }
+    } catch (error) {
+      // net::ERR_FAILED during CORS/cold-start often surfaces as a thrown TypeError
+      lastError = error;
     }
 
     if (attempt < maxAttempts) {
-      await sleep(1500 * attempt);
+      await sleep(2000 * attempt);
     }
   }
 
-  return lastResponse!;
+  if (lastResponse) {
+    return lastResponse;
+  }
+  throw lastError instanceof Error ? lastError : new Error("Failed to reach backend");
 }

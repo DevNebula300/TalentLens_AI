@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -26,10 +26,6 @@ engine = create_engine(
     poolclass=NullPool,
     connect_args={"connect_timeout": 10},
 )
-
-with engine.connect() as conn:
-    conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-    conn.commit()
 
 SessionLocal = sessionmaker(
     bind=engine,
