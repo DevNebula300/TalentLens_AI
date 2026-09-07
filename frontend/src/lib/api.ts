@@ -20,28 +20,31 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function withOwnerId(input: string): string {
+  const ownerId = encodeURIComponent(getOwnerId());
+  const join = input.includes("?") ? "&" : "?";
+  return `${input}${join}owner_id=${ownerId}`;
+}
+
 /**
- * fetch wrapper that always sends the owner identity header.
- * Retries on 502/503 for Railway Serverless cold starts (can take a while).
+ * fetch wrapper that scopes requests via owner_id query param (avoids CORS preflight).
+ * Retries on 502/503 for Railway cold starts.
  */
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const headers = new Headers(init.headers);
-  headers.set("X-Owner-Id", getOwnerId());
-
+  const url = withOwnerId(input);
   const maxAttempts = 5;
   let lastResponse: Response | null = null;
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const response = await fetch(input, { ...init, headers });
+      const response = await fetch(url, init);
       lastResponse = response;
 
       if (response.status !== 502 && response.status !== 503) {
         return response;
       }
     } catch (error) {
-      // net::ERR_FAILED during CORS/cold-start often surfaces as a thrown TypeError
       lastError = error;
     }
 

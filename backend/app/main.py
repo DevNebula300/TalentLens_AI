@@ -5,39 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-def _init_database() -> None:
-    from sqlalchemy import text
-
-    from app.database.connection import Base, engine
-    from app.models import Analysis, Resume  # noqa: F401
-
-    with engine.begin() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-
-    Base.metadata.create_all(bind=engine)
-
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                "ALTER TABLE resumes "
-                "ADD COLUMN IF NOT EXISTS owner_id VARCHAR(36)"
-            )
-        )
-        conn.execute(
-            text(
-                "CREATE INDEX IF NOT EXISTS ix_resumes_owner_id "
-                "ON resumes (owner_id)"
-            )
-        )
-
-
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Never block readiness forever if DB init fails — surface /health first.
-    try:
-        _init_database()
-    except Exception as exc:  # noqa: BLE001
-        print(f"[startup] database init failed: {exc}")
+    # Intentionally empty: DB init is lazy so Railway can bind $PORT immediately.
     yield
 
 
@@ -48,7 +18,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Always allow the production Vercel app; merge with ALLOWED_ORIGINS from Railway.
 default_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
@@ -80,7 +49,6 @@ async def health_check():
     return {"status": "ok"}
 
 
-# Import routes after app/health exist so cold start reaches listen sooner.
 from app.api.routes.resume import router as resume_router  # noqa: E402
 
 app.include_router(resume_router)
