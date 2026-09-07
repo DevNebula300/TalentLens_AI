@@ -13,8 +13,3 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 overlapSeconds = 0
 drainingSeconds = 10
-
-# Allow enough RAM for torch/MiniLM; billed only while awake
-[deploy.limitOverride.containers]
-cpu = 1
-memoryBytes = 2147483648

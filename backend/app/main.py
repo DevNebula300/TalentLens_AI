@@ -5,17 +5,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    # Run DB setup after the process starts so Railway can bind $PORT quickly.
+def _init_database() -> None:
     from sqlalchemy import text
 
     from app.database.connection import Base, engine
     from app.models import Analysis, Resume  # noqa: F401
 
-    Base.metadata.create_all(bind=engine)
     with engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+
+    Base.metadata.create_all(bind=engine)
+
+    with engine.begin() as conn:
         conn.execute(
             text(
                 "ALTER TABLE resumes "
@@ -28,6 +29,15 @@ async def lifespan(_app: FastAPI):
                 "ON resumes (owner_id)"
             )
         )
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Never block readiness forever if DB init fails — surface /health first.
+    try:
+        _init_database()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[startup] database init failed: {exc}")
     yield
 
 
