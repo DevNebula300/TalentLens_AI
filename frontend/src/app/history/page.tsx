@@ -3,7 +3,7 @@
 import { FileText, PlusCircle, Calendar, ChevronRight, Target, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { API_BASE_URL, apiFetch } from "@/lib/api";
+import { fetchHistory, removeAnalysis } from "@/lib/api";
 
 export default function HistoryPage() {
   const [historyItems, setHistoryItems] = useState<any[]>([]);
@@ -11,14 +11,9 @@ export default function HistoryPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function fetchHistory() {
+    async function loadHistory() {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/api/resume/history`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch history");
-        }
-        const data = await response.json();
-        setHistoryItems(data);
+        setHistoryItems(await fetchHistory());
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -26,7 +21,7 @@ export default function HistoryPage() {
       }
     }
     
-    fetchHistory();
+    loadHistory();
   }, []);
 
   const handleDelete = async (e: React.MouseEvent, id: number) => {
@@ -34,12 +29,7 @@ export default function HistoryPage() {
     if (!confirm("Are you sure you want to delete this analysis?")) return;
     
     try {
-      const response = await apiFetch(`${API_BASE_URL}/api/resume/analysis/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to delete analysis");
-      }
+      await removeAnalysis(id);
       setHistoryItems(items => items.filter(item => item.id !== id));
     } catch (err: any) {
       alert(err.message);
@@ -66,7 +56,7 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Analysis History</h1>
-            <p className="text-slate-600 mt-2">View and manage your past resume and job description analyses.</p>
+            <p className="text-slate-600 mt-2">View and manage past analyses stored in this browser.</p>
           </div>
           {historyItems.length > 0 && (
             <Link href="/analyze" className="flex items-center gap-2 bg-[#363893] text-white px-5 py-2.5 rounded-full font-medium hover:bg-[#23245c] transition-colors shadow-sm">

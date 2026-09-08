@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, Download, Target, CheckCircle2, Zap, Lightbulb, X 
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { API_BASE_URL, apiFetch } from "@/lib/api";
+import { fetchAnalysis, fetchResumePdfUrl } from "@/lib/api";
 
 // highlight text component
 
@@ -74,22 +74,14 @@ export default function ResultPage() {
   useEffect(() => {
     let objectUrl: string | null = null;
 
-    async function fetchAnalysis() {
+    async function loadAnalysis() {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/api/resume/analysis/${params.id}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch analysis");
-        }
-        const data = await response.json();
+        const data = await fetchAnalysis(Number(params.id));
         setAnalysis(data);
 
         if (data.has_pdf && data.resume_id) {
-          const pdfResponse = await apiFetch(`${API_BASE_URL}/api/resume/file/${data.resume_id}`);
-          if (pdfResponse.ok) {
-            const blob = await pdfResponse.blob();
-            objectUrl = URL.createObjectURL(blob);
-            setPdfUrl(objectUrl);
-          }
+          objectUrl = await fetchResumePdfUrl(data.resume_id);
+          if (objectUrl) setPdfUrl(objectUrl);
         }
       } catch (err: any) {
         setError(err.message);
@@ -99,7 +91,7 @@ export default function ResultPage() {
     }
 
     if (params.id) {
-      fetchAnalysis();
+      loadAnalysis();
     }
 
     return () => {

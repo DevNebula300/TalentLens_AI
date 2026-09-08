@@ -3,7 +3,7 @@
 import { FileText, Upload, Briefcase, File, X, History, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL, apiFetch } from "@/lib/api";
+import { analyzeExisting, fetchResumeList, uploadAndAnalyze } from "@/lib/api";
 
 export default function AnalyzePage() {
   const router = useRouter();
@@ -21,24 +21,20 @@ export default function AnalyzePage() {
   const [jdText, setJdText] = useState("");
   
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [loadingLabel, setLoadingLabel] = useState("Processing...");
 
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const jdInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    async function fetchResumes() {
+    async function loadResumes() {
       try {
-        const response = await apiFetch(`${API_BASE_URL}/api/resume/list`);
-        if (response.ok) {
-          const data = await response.json();
-          setExistingResumes(data);
-        }
+        setExistingResumes(await fetchResumeList());
       } catch (err) {
         console.error("Failed to fetch resumes", err);
       }
     }
-    fetchResumes();
+    loadResumes();
   }, []);
 
   const handleDragOver = (e: React.DragEvent, type: 'resume' | 'jd') => {
@@ -76,48 +72,30 @@ export default function AnalyzePage() {
     if (resumeInputMode === 'existing' && !selectedResumeId) return;
     
     setIsLoading(true);
-    setResult(null);
+    setLoadingLabel("Loading AI model (first run may take a minute)...");
     try {
-      let endpoint = `${API_BASE_URL}/api/resume/upload`;
-      const formData = new FormData();
+      const jdPayload = {
+        jdText: jdInputMode === "text" ? jdText : undefined,
+        jdFile: jdInputMode === "file" ? jdFile : null,
+      };
 
-      if (resumeInputMode === 'existing' && selectedResumeId) {
-        endpoint = `${API_BASE_URL}/api/resume/analyze-existing`;
-      }
-      
-      if (resumeInputMode === 'file' && resumeFile) {
-        formData.append("file", resumeFile);
-      } else if (resumeInputMode === 'existing' && selectedResumeId) {
-        formData.append("resume_id", selectedResumeId.toString());
-      }
-      
-      if (jdInputMode === 'text' && jdText.trim()) {
-        formData.append("jd_text", jdText);
-      } else if (jdInputMode === 'file' && jdFile) {
-        formData.append("jd_file", jdFile);
-      }
-      
-      const response = await apiFetch(endpoint, {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to analyze resume");
-      }
-      
-      const data = await response.json();
+      setLoadingLabel("Parsing documents & matching skills...");
+      const data =
+        resumeInputMode === "existing" && selectedResumeId
+          ? await analyzeExisting({ resumeId: selectedResumeId, ...jdPayload })
+          : await uploadAndAnalyze({ file: resumeFile!, ...jdPayload });
       
       if (data.analysis_id) {
         router.push(`/results/${data.analysis_id}`);
       } else {
-        setResult(data);
+        alert("Analysis completed but no score was produced. Please include a job description.");
       }
     } catch (error) {
       console.error(error);
-      alert("An error occurred while connecting to the backend.");
+      alert(error instanceof Error ? error.message : "Analysis failed.");
     } finally {
       setIsLoading(false);
+      setLoadingLabel("Processing...");
     }
   };
 
@@ -351,7 +329,7 @@ export default function AnalyzePage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Processing...
+                {loadingLabel}
               </>
             ) : (
               "Analyze Compatibility"

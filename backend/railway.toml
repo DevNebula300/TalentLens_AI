@@ -1,5 +1,7 @@
-# Config for Railway service (root directory should be `backend`)
-# Enable Serverless in the dashboard: Settings → Deploy → Serverless
+# OPTIONAL / LEGACY
+# The Next.js frontend no longer requires this Railway service.
+# You can delete or pause this service in the Railway dashboard to stop billing.
+# Kept for reference if you want the original Python + Postgres pipeline.
 
 [build]
 builder = "DOCKERFILE"
